@@ -65,6 +65,7 @@ class World {
     for (const p of this.players) if (p.compDirty) this.computeRoadComps(p);
     this.rebuildGrid();
     for (const u of this.units.values()) this.updateUnit(u);
+    this.separateSoldiers();
     for (const b of this.buildings.values()) this.updateBuilding(b);
     for (const g of this.groups.values()) this.updateGroup(g);
     this.updateProjectiles();
@@ -343,6 +344,33 @@ class World {
       arr.push(u);
     }
   }
+  // Soldiers gently push apart so melee doesn't collapse into one pile.
+  separateSoldiers() {
+    const m = this.map, R = 0.62;
+    for (const arr of this.grid.values()) {
+      for (let a = 0; a < arr.length; a++) {
+        const u = arr[a];
+        if (u.kind !== 'soldier' || u.dead || u.inside) continue;
+        for (let b = a + 1; b < arr.length; b++) {
+          const v = arr[b];
+          if (v.kind !== 'soldier' || v.dead || v.inside) continue;
+          let dx = v.x - u.x, dy = v.y - u.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 >= R * R) continue;
+          const d = Math.sqrt(d2) || 0.01;
+          if (d2 === 0) { dx = ((u.id * 7) % 3) - 1 || 0.5; dy = ((v.id * 5) % 3) - 1; }
+          const push = (R - d) * 0.25 / (Math.hypot(dx, dy) || 1);
+          const mv = (w, sx, sy) => {
+            const nx = w.x + sx, ny = w.y + sy;
+            if (m.walkable(m.idx(Math.floor(nx), Math.floor(ny)))) { w.x = nx; w.y = ny; }
+          };
+          mv(u, -dx * push, -dy * push);
+          mv(v, dx * push, dy * push);
+        }
+      }
+    }
+  }
+
   // Nearest enemy unit of `owner` within r tiles of (x,y). soldiersFirst prefers armed targets.
   nearestEnemy(owner, x, y, r, soldiersFirst = true) {
     let best = null, bd = r * r, bestS = null, bsd = r * r;

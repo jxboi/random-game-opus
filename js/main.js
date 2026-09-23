@@ -29,7 +29,14 @@ class Game {
   escape() { if (this.onEsc) this.onEsc(); }
 
   start(seed, difficulty) {
-    this.world = new World({ seed, difficulty });
+    this.attach(new World({ seed, difficulty }));
+    const s = this.world.map.starts[0];
+    this.ui.message('Build a woodcutter, sawmill and quarry first. Connect every entrance with roads.', s.x, s.y);
+    this.ui.message(`The red lord's town lies to the north-east. Difficulty: ${DIFFICULTY[difficulty].name}.`);
+  }
+
+  attach(world) {
+    this.world = world;
     if (!this.renderer) this.renderer = new Renderer(document.getElementById('view'), this.world);
     else this.renderer.setWorld(this.world);
     if (!this.ui) this.ui = new UI(this);
@@ -41,11 +48,33 @@ class Game {
     this.renderer.resize();
     this.renderer.cam = { x: s.x + 2, y: s.y - 2, zoom: 1.1 };
     this.speed = 1; this.paused = false; this.acc = 0;
+    this.syncChrome();
     this.closeOverlay();
-    this.ui.message('Build a woodcutter, sawmill and quarry first. Connect every entrance with roads.', s.x, s.y);
-    this.ui.message(`The red lord's town lies to the north-east. Difficulty: ${DIFFICULTY[difficulty].name}.`);
     this.ui.refreshPanel(true);
     if (!this.running) { this.running = true; this.last = performance.now(); requestAnimationFrame(t => this.frame(t)); }
+  }
+
+  hasSave() { try { return !!localStorage.getItem('km.save'); } catch (e) { return false; } }
+
+  saveGame() {
+    try {
+      localStorage.setItem('km.save', JSON.stringify(this.world.serialize()));
+      this.ui.message('Game saved.', null, null, 'good');
+      return true;
+    } catch (e) {
+      this.ui.message('Could not save: ' + e.message, null, null, 'bad');
+      return false;
+    }
+  }
+
+  loadGame() {
+    try {
+      const w = World.fromSave(JSON.parse(localStorage.getItem('km.save')));
+      this.attach(w);
+      this.ui.message(`Game loaded (${fmtTime(w.time)}).`, null, null, 'good');
+    } catch (e) {
+      alert('Could not load the saved game: ' + e.message);
+    }
   }
 
   frame(now) {
@@ -85,7 +114,8 @@ class Game {
         case 'completed':
           if (mine) { sfx.complete(); ui.message(`${BUILDINGS[e.btype].name} completed.`, e.x, e.y, 'good'); }
           break;
-        case 'trained': if (mine) { sfx.trained(); } break;
+        case 'trained': if (mine) { sfx.trained(); this.renderer.floater(e.x + 0.5, e.y - 0.5, CITIZENS[e.utype].icon); } break;
+        case 'produced': this.renderer.floater(e.x, e.y, GOODS[e.g].icon); break;
         case 'soldier': if (mine) { sfx.soldier(); ui.message(`${SOLDIERS[e.utype].name} ready for duty.`, e.x, e.y); } break;
         case 'hit': { const p = this.where(e.x, e.y); if (p.vol > 0) { if (e.melee) sfx.clash(p.pan, p.vol); else sfx.thud(p.pan, p.vol * 0.6); } break; }
         case 'hitb': { const p = this.where(e.x, e.y); if (p.vol > 0) sfx.thud(p.pan, p.vol); break; }
@@ -155,7 +185,7 @@ class Game {
       <label>Difficulty
         <select id="st-diff">${Object.keys(DIFFICULTY).map(k => `<option value="${k}" ${k === diff ? 'selected' : ''}>${DIFFICULTY[k].name}</option>`).join('')}</select></label>
       <label>Map seed <input id="st-seed" type="number" value="${seed}" min="0" max="99999"></label>
-      <div class="btns"><button class="primary" id="st-go">Start game</button> <button id="st-help">How to play</button></div>
+      <div class="btns"><button class="primary" id="st-go">Start game</button>${this.hasSave() ? ' <button id="st-load">Continue saved game</button>' : ''} <button id="st-help">How to play</button></div>
       <p class="fine">Fan-made remake. Not affiliated with the original developers or publishers. All art is procedurally drawn.</p>`);
     o.querySelector('#st-go').onclick = () => {
       this.sfx.unlock();
@@ -164,6 +194,8 @@ class Game {
       this.start(Math.abs(parseInt(o.querySelector('#st-seed').value, 10) || 1), d);
     };
     o.querySelector('#st-help').onclick = () => this.showHelp(() => this.showStart());
+    const ld = o.querySelector('#st-load');
+    if (ld) ld.onclick = () => { this.sfx.unlock(); this.loadGame(); };
   }
 
   showHelp(back) {
@@ -187,12 +219,16 @@ class Game {
     this.paused = true; this.syncChrome();
     const o = this.overlay(`<h2>Paused</h2>
       <div class="btns col"><button class="primary" id="mn-resume">Resume</button>
+      <button id="mn-save">Save game</button>
+      <button id="mn-load" ${this.hasSave() ? '' : 'disabled'}>Load saved game</button>
       <button id="mn-help">How to play</button>
       <button id="mn-restart">Restart (same map)</button>
       <button id="mn-new">New game</button></div>`, () => resume());
     const resume = () => { this.closeOverlay(); this.paused = wasPaused; this.syncChrome(); };
     o.querySelector('#mn-resume').onclick = resume;
     o.querySelector('#mn-help').onclick = () => this.showHelp(() => this.showMenu());
+    o.querySelector('#mn-save').onclick = () => { if (this.saveGame()) { resume(); } };
+    o.querySelector('#mn-load').onclick = () => this.loadGame();
     o.querySelector('#mn-restart').onclick = () => this.start(this.world.seed, this.world.difficulty);
     o.querySelector('#mn-new').onclick = () => this.showStart();
   }

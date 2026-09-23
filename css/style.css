@@ -136,6 +136,7 @@ button { font: inherit; cursor: pointer; }
 .btns button { padding: 8px 18px; border-radius: 4px; border: 1px solid #7a5a2a; background: linear-gradient(#fbf1d8, #e0c890); color: var(--ink); font-size: 15px; }
 .btns button.primary { background: linear-gradient(#f1c65a, #c9952a); font-weight: bold; }
 .btns button:hover { filter: brightness(1.06); }
+.btns button:disabled { opacity: 0.45; cursor: default; filter: none; }
 .card .fine { font-size: 11px; color: var(--muted); margin-top: 16px; }
 .help { text-align: left; }
 .help p { margin: 0 0 8px; }
@@ -159,3 +160,4 @@ button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
   .ctl button { min-width: 28px; padding: 0 3px; }
   .bgrid, .ugrid { grid-template-columns: repeat(4, 1fr); }
 }
+.stats td[colspan] { text-align: center; }

@@ -156,6 +156,8 @@ Object.assign(World.prototype, {
       return;
     }
     if (j.kind === 'deliver') this.doDeliver(u);
+    else if (j.kind === 'return') this.carryToStore(u);
+    else u.job = null;
   },
 
   cancelDelivery(u) {
@@ -365,6 +367,7 @@ Object.assign(World.prototype, {
     b.stock[g] = (b.stock[g] || 0) + 1;
     const p = this.players[b.owner];
     p.stats.produced[g] = (p.stats.produced[g] || 0) + 1;
+    if (b.owner === 0) this.emit('produced', { owner: 0, g, x: b.x + b.w / 2, y: b.y });
   },
 
   outputFull(b) {

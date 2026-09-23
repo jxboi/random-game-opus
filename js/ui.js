@@ -172,7 +172,7 @@ class UI {
     if (d.tool) {
       const kind = this.state.tool.kind === 'road' ? 1 : this.state.tool.kind === 'field' ? 2 : 3;
       const n = this.world.planLine(0, d.x0, d.y0, t.x, t.y, kind);
-      if (n) this.game.sfx.plan(); else this.game.sfx.error();
+      if (!n) this.game.sfx.error(); // success is voiced by the 'planned' event
       return;
     }
     if (d.pan) {

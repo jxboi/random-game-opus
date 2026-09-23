@@ -211,3 +211,32 @@ test('performance: 10 minutes of a full match simulates quickly', () => {
   const ms = Number(process.hrtime.bigint() - t0) / 1e6;
   assert.ok(ms < 6000, `took ${ms.toFixed(0)} ms`);
 });
+
+test('save / load round-trips and the game continues identically', () => {
+  const a = new World({ seed: 21, difficulty: 'hard' });
+  const s0 = a.map.starts[0];
+  autoPlace(a, 0, 'woodcutter', s0.x, s0.y, false);
+  autoPlace(a, 0, 'farm', s0.x, s0.y, false);
+  run(a, 400);
+  const blob = JSON.stringify(a.serialize());
+  assert.ok(blob.length < 2e6, 'save is small enough for localStorage: ' + blob.length);
+  const b = World.fromSave(JSON.parse(blob));
+  run(a, 500); run(b, 500);
+  const snap = w => JSON.stringify([w.time.toFixed(1), w.nextId, w.stockTotals(0), w.stockTotals(1), w.players.map(p => p.stats),
+    [...w.units.values()].map(u => [u.id, u.x.toFixed(3), u.y.toFixed(3), u.hp.toFixed(2)])]);
+  assert.strictEqual(snap(b), snap(a));
+  checkInvariants(b);
+});
+
+test('a serf stranded with goods walks them back to the storehouse', () => {
+  const w = new World({ seed: 42, noAI: true });
+  const st = [...w.buildings.values()].find(b => b.owner === 0 && b.type === 'storehouse');
+  const serf = [...w.units.values()].find(u => u.owner === 0 && u.type === 'serf');
+  const before = st.stock.corn || 0;
+  serf.x = st.dx + 6.5; serf.y = st.dy + 4.5; serf.job = null; serf.carry = 'corn';
+  run(w, 30);
+  assert.strictEqual(serf.carry, null, 'dropped the goods');
+  // No mill or swine farm exists, so nothing else wants the corn: it must be in the storehouse.
+  assert.strictEqual(st.stock.corn || 0, before + 1, 'corn reached the storehouse');
+  assert.ok(!serf.job || serf.job.kind !== 'return', 'not stuck in return');
+});

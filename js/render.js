@@ -15,6 +15,7 @@ class Renderer {
     this.bsprites = new Map();
     this.smoke = [];
     this.flashes = [];           // ground flashes for order feedback
+    this.floaters = [];          // rising production icons
     this.time = 0;
     for (let s = 1; s <= 5; s++) { this.trees[s] = []; for (let v = 0; v < 3; v++) this.trees[s][v] = makeTreeSprite(s, v); }
     for (let s = 0; s < 3; s++) { this.stones[s] = []; for (let v = 0; v < 3; v++) this.stones[s][v] = makeStoneSprite(s, v); }
@@ -97,27 +98,34 @@ class Renderer {
     this.drawGround(tx0, ty0, tx1, ty1, ui);
     this.drawObjects(tx0, ty0, tx1, ty1, alpha, ui);
     this.drawProjectiles(alpha);
+    this.drawFloaters(dt);
     this.drawOverlay(ui, alpha);
   }
 
   drawGround(tx0, ty0, tx1, ty1, ui) {
     const w = this.world, m = w.map, ctx = this.ctx, s = this.scale, W = m.W;
     const t = this.time;
+    const ox = this.cw / 2 - this.cam.x * s, oy = this.ch / 2 - this.cam.y * s;
+    // Water shimmer: one batched path, skipped when zoomed far out.
+    if (s >= 18) {
+      ctx.strokeStyle = 'rgba(200,230,255,0.16)';
+      ctx.lineWidth = Math.max(1, s * 0.04);
+      ctx.beginPath();
+      for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) {
+        const i = y * W + x;
+        if (m.terrain[i] !== T_WATER) continue;
+        const h = hash2(x, y, 4);
+        if (Math.sin(t * 1.3 + h * 6.28) < 0.2) continue;
+        const sx = x * s + ox + ((t * 0.15 + hash2(x, y, 5)) % 1) * s * 0.4, sy = y * s + oy;
+        ctx.moveTo(sx + s * 0.15, sy + s * 0.4);
+        ctx.quadraticCurveTo(sx + s * 0.3, sy + s * 0.32, sx + s * 0.45, sy + s * 0.4);
+      }
+      ctx.stroke();
+    }
     for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) {
       const i = y * W + x;
-      const [sx, sy] = this.toScreen(x, y);
-      const ter = m.terrain[i];
-      if (ter === T_WATER) {
-        const ph = hash2(x, y, 4) * 6.28;
-        const a = 0.10 + 0.08 * Math.sin(t * 1.3 + ph);
-        ctx.strokeStyle = `rgba(200,230,255,${a})`;
-        ctx.lineWidth = Math.max(1, s * 0.04);
-        const ox = ((t * 0.15 + hash2(x, y, 5)) % 1) * s * 0.4;
-        ctx.beginPath();
-        ctx.moveTo(sx + s * 0.15 + ox, sy + s * 0.4); ctx.quadraticCurveTo(sx + s * 0.3 + ox, sy + s * 0.32, sx + s * 0.45 + ox, sy + s * 0.4);
-        ctx.stroke();
-        continue;
-      }
+      if (!m.field[i] && !m.road[i] && !m.plan[i]) continue;
+      const sx = x * s + ox, sy = y * s + oy;
       if (m.field[i]) this.drawField(i, sx, sy, s);
       if (m.road[i]) this.drawRoad(i, x, y, sx, sy, s);
       if (m.plan[i]) {
@@ -243,7 +251,7 @@ class Renderer {
           const spr = this.trees[st][v];
           const sc = s / SPR;
           const jx = (hash2(o.x, o.ty, 9) - 0.5) * 0.3, jy = (hash2(o.x, o.ty, 10) - 0.5) * 0.2;
-          const [sx, sy] = this.toScreen(o.x + 0.5 + jx, o.ty + 0.85 + jy);
+          const sx = (o.x + 0.5 + jx - this.cam.x) * s + this.cw / 2, sy = (o.ty + 0.85 + jy - this.cam.y) * s + this.ch / 2;
           ctx.drawImage(spr, sx - spr.width * sc / 2, sy - spr.height * sc + SPR * 0.25 * sc, spr.width * sc, spr.height * sc);
           break;
         }
@@ -693,6 +701,32 @@ class Renderer {
   }
 
   flash(x, y, col) { this.flashes.push({ x, y, t: 0, col }); }
+
+  // Small rising icon over a building when it produces something (only if on screen).
+  floater(x, y, icon) {
+    const v = this.view;
+    if (!v || x < v.tx0 || x > v.tx1 || y < v.ty0 || y > v.ty1) return;
+    if (this.floaters.length > 40) this.floaters.shift();
+    this.floaters.push({ x, y, icon, t: 0 });
+  }
+
+  drawFloaters(dt) {
+    const ctx = this.ctx, s = this.scale;
+    const keep = [];
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const f of this.floaters) {
+      f.t += dt;
+      if (f.t > 1.4) continue;
+      keep.push(f);
+      const [sx, sy] = this.toScreen(f.x, f.y);
+      const k = f.t / 1.4;
+      ctx.globalAlpha = k < 0.15 ? k / 0.15 : 1 - Math.max(0, (k - 0.5) / 0.5);
+      ctx.font = `${Math.round(Math.max(12, s * 0.45))}px sans-serif`;
+      ctx.fillText(f.icon, sx, sy - s * (0.3 + k * 0.9));
+    }
+    ctx.globalAlpha = 1;
+    this.floaters = keep;
+  }
 
   // --------------------------------------------------------------- minimap
   drawMinimap(canvas) {
