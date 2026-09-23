@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Knights &amp; Merchants</title>
+<meta name="description" content="A browser remake of the classic medieval economy and war strategy game.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="brand">⚜ Knights &amp; Merchants</div>
+    <div id="topbar-stats"></div>
+    <div class="ctl">
+      <button id="btn-pause" title="Pause (Space)">⏸</button>
+      <button data-speed="1" title="Normal speed (1)">1×</button>
+      <button data-speed="2" title="Fast (2)">2×</button>
+      <button data-speed="4" title="Faster (3)">4×</button>
+      <button id="btn-mute" title="Sound on/off">🔊</button>
+      <button id="btn-menu" title="Menu">☰</button>
+    </div>
+  </header>
+  <main id="main">
+    <div id="stage">
+      <canvas id="view"></canvas>
+      <div id="banner"></div>
+      <div id="tip"></div>
+    </div>
+    <aside id="panel">
+      <canvas id="minimap" width="192" height="192"></canvas>
+      <nav id="tabs">
+        <button data-tab="build" class="on">🔨 Build</button>
+        <button data-tab="stock">📦 Stock</button>
+        <button data-tab="army">⚔ Army</button>
+        <button data-tab="guide">📜 Guide</button>
+      </nav>
+      <div id="panel-body"></div>
+      <div id="messages"></div>
+    </aside>
+  </main>
+  <div id="overlay"></div>
+</div>
+<script src="js/data.js"></script>
+<script src="js/util.js"></script>
+<script src="js/map.js"></script>
+<script src="js/path.js"></script>
+<script src="js/world.js"></script>
+<script src="js/units.js"></script>
+<script src="js/buildings.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/setup.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/art.js"></script>
+<script src="js/render.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
