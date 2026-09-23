@@ -1,0 +1,8 @@
+test/
+tools/
+docs/
+shots/
+.github/
+node_modules/
+AGENTS.md
+CLAUDE.md

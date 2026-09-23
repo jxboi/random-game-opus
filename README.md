@@ -15,7 +15,12 @@ npm start            # serves the folder at http://localhost:8000
 ```
 
 ES modules need an HTTP server, so opening `index.html` directly from disk won't
-work. Any static server will do. Switch between 3D and classic 2D graphics in the
+work. Any static server will do.
+
+**Deploy:** it is a static site with no build step. On Vercel, import the GitHub
+repo and accept the defaults (`vercel.json` turns the build off and serves the
+repo root), or run `npx vercel --prod` from the repo root. Any static host
+(GitHub Pages, Netlify, S3) works the same way. Switch between 3D and classic 2D graphics in the
 ☰ menu.
 
 ## How it plays
