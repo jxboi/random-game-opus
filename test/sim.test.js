@@ -1,11 +1,9 @@
-'use strict';
-// Headless simulation tests. Run with: node --test test/
-const test = require('node:test');
-const assert = require('node:assert');
-const { loadSim } = require('./load.js');
+// Headless simulation tests. Run with: npm test
+import test from 'node:test';
+import assert from 'node:assert';
+import * as S from '../src/core/index.js';
 
-const S = loadSim();
-const { World, T_WATER, T_MOUNTAIN, autoPlace } = S;
+const { World, T_WATER, T_MOUNTAIN, autoPlace, saveWorld, loadWorld } = S;
 
 function run(w, seconds) { for (let i = 0; i < seconds * 10; i++) w.step(); }
 function near(w, x, y, r, pred) {
@@ -111,7 +109,7 @@ test('full economy: food chain and iron chain up to weapons', () => {
     search: for (let y = s.y - 34; y <= s.y; y++) for (let x = s.x - 16; x <= s.x + 30; x++) {
       if (w.canPlace(0, type, x, y)) continue;
       const b = w.placeBuilding(0, type, x, y);
-      const path = S.roadPath(w, 0, b.door);
+      const path = S.roadPathToNetwork(w, 0, b.door, new Set());
       if (!path) { w.destroyBuilding(b, 'demolish'); continue; }
       for (const i of path) if (!m.road[i] && !m.plan[i]) w.planTile(0, i % m.W, (i / m.W) | 0, 1);
       mines++;
@@ -218,9 +216,9 @@ test('save / load round-trips and the game continues identically', () => {
   autoPlace(a, 0, 'woodcutter', s0.x, s0.y, false);
   autoPlace(a, 0, 'farm', s0.x, s0.y, false);
   run(a, 400);
-  const blob = JSON.stringify(a.serialize());
+  const blob = JSON.stringify(saveWorld(a));
   assert.ok(blob.length < 2e6, 'save is small enough for localStorage: ' + blob.length);
-  const b = World.fromSave(JSON.parse(blob));
+  const b = loadWorld(JSON.parse(blob));
   run(a, 500); run(b, 500);
   const snap = w => JSON.stringify([w.time.toFixed(1), w.nextId, w.stockTotals(0), w.stockTotals(1), w.players.map(p => p.stats),
     [...w.units.values()].map(u => [u.id, u.x.toFixed(3), u.y.toFixed(3), u.hp.toFixed(2)])]);

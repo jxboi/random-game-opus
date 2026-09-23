@@ -4,16 +4,19 @@ A fan-made browser rebuild of the classic 1998 medieval economy and war
 strategy game. Build a road-connected town, run long production chains,
 feed your people, forge weapons and march on the red lord.
 
-Plain HTML, CSS and JavaScript. There are no dependencies and no build step,
-and all art is drawn procedurally at runtime.
+Plain ES modules with no build step and no runtime dependencies. It renders in
+3D with three.js (vendored), with a classic 2D canvas view as a fallback. All
+art is generated procedurally at runtime.
 
 ## Play
 
-Open `index.html` in a browser. Or serve the folder:
-
 ```sh
-npm start            # python3 -m http.server 8000 → http://localhost:8000
+npm start            # serves the folder at http://localhost:8000
 ```
+
+ES modules need an HTTP server, so opening `index.html` directly from disk won't
+work. Any static server will do. Switch between 3D and classic 2D graphics in the
+☰ menu.
 
 ## How it plays
 
@@ -80,43 +83,20 @@ The computer runs the same economy you do from a prebuilt town. It also gets
 a small supply trickle in place of the mines and smithies it doesn't build.
 It defends its town, rebuilds what you burn and sends larger waves over time.
 
-## Code layout
+## Developing
 
-| File | Purpose |
-| --- | --- |
-| `js/data.js` | Goods, citizens, soldiers, buildings, difficulty tables |
-| `js/map.js` | Tile map and procedural map generation (fair, mirrored resources) |
-| `js/path.js` | A* pathfinding (general and road-only) |
-| `js/world.js` | Simulation core: placement, roads, logistics, construction, staffing |
-| `js/units.js` | Movement and citizen behaviour (serfs, laborers, workers, eating) |
-| `js/buildings.js` | School, barracks, watchtower |
-| `js/combat.js` | Groups, formations, soldiers, projectiles |
-| `js/setup.js` | Starting towns and the auto-layout used by the AI |
-| `js/ai.js` | Computer opponent |
-| `js/save.js` | Save / load |
-| `js/art.js`, `js/render.js` | Procedural sprites and the canvas renderer |
-| `js/audio.js` | WebAudio sound cues |
-| `js/ui.js`, `js/main.js` | Input, side panel, overlays, game loop |
+Start with **[AGENTS.md](AGENTS.md)**: commands, repository map, invariants and
+the definition of done. Then read:
 
-The simulation (`data` through `save`) never touches the DOM. It runs at a
-fixed 10 ticks per second and is deterministic for a given seed. The renderer
-interpolates between ticks.
-
-## Tests
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the simulation, logistics, combat, AI, saves, commands and renderers
+- [docs/EXTENDING.md](docs/EXTENDING.md): step-by-step recipes (new building, good, soldier, command, event...)
+- [docs/ROADMAP.md](docs/ROADMAP.md): prioritized backlog with acceptance criteria
+- [docs/DECISIONS.md](docs/DECISIONS.md): why things are the way they are
 
 ```sh
-npm test
+npm test         # headless simulation + architecture tests (no install needed)
+npm run smoke    # browser run of both renderers, screenshots in shots/ (needs Playwright)
 ```
-
-The Node tests run the simulation headlessly. They cover:
-
-- map fairness and reachability across seeds
-- construction, and road-only deliveries
-- the full food and iron chains
-- combat balance, including pikes beating knights
-- AI waves, and peaceful mode never attacking
-- determinism, and save/load continuing identically
-- performance
 
 ---
 

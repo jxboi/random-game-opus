@@ -23,7 +23,6 @@
   </header>
   <main id="main">
     <div id="stage">
-      <canvas id="view"></canvas>
       <div id="banner"></div>
       <div id="tip"></div>
     </div>
@@ -41,21 +40,12 @@
   </main>
   <div id="overlay"></div>
 </div>
-<script src="js/data.js"></script>
-<script src="js/util.js"></script>
-<script src="js/map.js"></script>
-<script src="js/path.js"></script>
-<script src="js/world.js"></script>
-<script src="js/units.js"></script>
-<script src="js/buildings.js"></script>
-<script src="js/combat.js"></script>
-<script src="js/setup.js"></script>
-<script src="js/ai.js"></script>
-<script src="js/save.js"></script>
-<script src="js/art.js"></script>
-<script src="js/render.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/main.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three/three.module.min.js",
+  "three/addons/": "./vendor/three/addons/"
+} }
+</script>
+<script type="module" src="src/main.js"></script>
 </body>
 </html>
